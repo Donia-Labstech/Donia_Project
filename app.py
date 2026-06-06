@@ -1,178 +1,334 @@
+# ============================================================
+# DONIA LABS TECH - منصة التطوير الذكية | النسخة 2.0
+# المطور: TOUINA DAOUD | © 2026 DONIA LABS TECH
+# ============================================================
+
 import streamlit as str_ui
 from anthropic import Anthropic
 import os
-import pyotp
-import qrcode
-from PIL import Image
-import io
+import base64
+import json
+import datetime
 
-# 1. إعداد واجهة Streamlit وحماية التهيئة الأولى
+# ============================================================
+# 1. إعداد الصفحة والهوية البصرية
+# ============================================================
 str_ui.set_page_config(
-    page_title="DONIA LABS TECH", 
+    page_title="DONIA LABS TECH",
     page_icon="🤖",
-    layout="centered"
+    layout="wide",
+    initial_sidebar_state="expanded"
 )
 
-# تصفيف الواجهة وتطوير مظهرها البصري ليتماشى مع الهوية الذكية لشعارك
+ADMIN_PASSWORD = "DoniaLabs2026"
+
+# ============================================================
+# 2. CSS الشامل للهوية البصرية الاحترافية
+# ============================================================
 str_ui.markdown("""
-    <style>
-    .main-title {
-        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        color: #00E5FF;
-        text-align: center;
-        font-weight: 700;
-        margin-top: -10px;
-        margin-bottom: 5px;
-    }
-    .sub-title {
-        text-align: center;
-        color: #A0AEC0;
-        font-size: 1.1rem;
-        margin-bottom: 20px;
-    }
-    .credits-box {
-        text-align: center;
-        background-color: #1A202C;
-        padding: 15px;
-        border-radius: 12px;
-        border: 1px solid #2D3748;
-        margin-bottom: 35px;
-    }
-    .credits-text {
-        color: #00E5FF;
-        font-size: 1.05rem;
-        font-weight: 600;
-        margin: 0;
-    }
-    .rights-text {
-        color: #718096;
-        font-size: 0.85rem;
-        margin: 8px 0 0 0;
-    }
-    </style>
+<style>
+/* ===== استيراد الخطوط ===== */
+@import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;900&display=swap');
+
+/* ===== الخلفية العامة ===== */
+.stApp {
+    background: linear-gradient(135deg, #0A0E1A 0%, #0D1117 50%, #0A0E1A 100%);
+    font-family: 'Tajawal', 'Segoe UI', sans-serif;
+}
+
+/* ===== إخفاء عناصر Streamlit الافتراضية ===== */
+#MainMenu {visibility: hidden;}
+footer {visibility: hidden;}
+header {visibility: hidden;}
+
+/* ===== الشريط الجانبي ===== */
+[data-testid="stSidebar"] {
+    background: linear-gradient(180deg, #0D1117 0%, #161B27 100%);
+    border-right: 1px solid #1E2D40;
+}
+[data-testid="stSidebar"] .stMarkdown h3 {
+    color: #00E5FF;
+    font-family: 'Tajawal', sans-serif;
+    font-size: 0.95rem;
+    border-bottom: 1px solid #1E2D40;
+    padding-bottom: 8px;
+}
+
+/* ===== العنوان الرئيسي ===== */
+.main-header {
+    background: linear-gradient(135deg, #0D1117 0%, #161B27 100%);
+    border: 1px solid #1E3A5F;
+    border-radius: 20px;
+    padding: 25px 30px;
+    margin-bottom: 25px;
+    text-align: center;
+    box-shadow: 0 0 40px rgba(0, 229, 255, 0.08);
+    position: relative;
+    overflow: hidden;
+}
+.main-header::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, transparent, #00E5FF, #0080FF, #00E5FF, transparent);
+}
+.main-title {
+    font-family: 'Tajawal', sans-serif;
+    color: #00E5FF;
+    font-size: 2.2rem;
+    font-weight: 900;
+    margin: 0 0 8px 0;
+    text-shadow: 0 0 30px rgba(0, 229, 255, 0.4);
+    letter-spacing: 1px;
+}
+.sub-title {
+    color: #8892A4;
+    font-size: 1rem;
+    margin: 0 0 15px 0;
+    font-family: 'Tajawal', sans-serif;
+}
+.credits-box {
+    display: inline-block;
+    background: rgba(0, 229, 255, 0.06);
+    border: 1px solid rgba(0, 229, 255, 0.2);
+    border-radius: 10px;
+    padding: 8px 20px;
+}
+.credits-text {
+    color: #00E5FF;
+    font-size: 0.95rem;
+    font-weight: 700;
+    margin: 0;
+    font-family: 'Tajawal', sans-serif;
+}
+.rights-text {
+    color: #4A5568;
+    font-size: 0.78rem;
+    margin: 4px 0 0 0;
+    font-family: 'Tajawal', sans-serif;
+}
+
+/* ===== بطاقات الإحصائيات ===== */
+.stat-card {
+    background: linear-gradient(135deg, #0D1117, #161B27);
+    border: 1px solid #1E2D40;
+    border-radius: 12px;
+    padding: 12px 15px;
+    text-align: center;
+    margin-bottom: 8px;
+    transition: border-color 0.3s;
+}
+.stat-card:hover { border-color: #00E5FF; }
+.stat-number {
+    color: #00E5FF;
+    font-size: 1.6rem;
+    font-weight: 900;
+    margin: 0;
+    font-family: 'Tajawal', sans-serif;
+}
+.stat-label {
+    color: #4A5568;
+    font-size: 0.75rem;
+    margin: 2px 0 0 0;
+    font-family: 'Tajawal', sans-serif;
+}
+
+/* ===== رسائل الشات ===== */
+[data-testid="stChatMessage"] {
+    background: rgba(13, 17, 23, 0.8) !important;
+    border: 1px solid #1E2D40 !important;
+    border-radius: 16px !important;
+    margin-bottom: 12px !important;
+    padding: 16px !important;
+    backdrop-filter: blur(10px);
+}
+[data-testid="stChatMessage"]:has([data-testid="chatAvatarIcon-user"]) {
+    border-color: rgba(0, 229, 255, 0.25) !important;
+    background: rgba(0, 229, 255, 0.04) !important;
+}
+[data-testid="stChatMessage"]:has([data-testid="chatAvatarIcon-assistant"]) {
+    border-color: rgba(0, 128, 255, 0.25) !important;
+    background: rgba(0, 128, 255, 0.04) !important;
+}
+
+/* ===== حقل الإدخال ===== */
+[data-testid="stChatInput"] {
+    background: #0D1117 !important;
+    border: 2px solid #1E3A5F !important;
+    border-radius: 16px !important;
+    color: #E2E8F0 !important;
+    font-family: 'Tajawal', sans-serif !important;
+}
+[data-testid="stChatInput"]:focus-within {
+    border-color: #00E5FF !important;
+    box-shadow: 0 0 20px rgba(0, 229, 255, 0.15) !important;
+}
+
+/* ===== الأزرار ===== */
+.stButton > button {
+    background: linear-gradient(135deg, #00E5FF, #0080FF) !important;
+    color: #0A0E1A !important;
+    border: none !important;
+    border-radius: 10px !important;
+    font-weight: 700 !important;
+    font-family: 'Tajawal', sans-serif !important;
+    transition: all 0.3s !important;
+    padding: 8px 16px !important;
+}
+.stButton > button:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 8px 25px rgba(0, 229, 255, 0.35) !important;
+}
+
+/* ===== شريط تقدم الـ Streaming ===== */
+.streaming-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: #00E5FF;
+    font-size: 0.85rem;
+    font-family: 'Tajawal', sans-serif;
+    padding: 6px 12px;
+    background: rgba(0, 229, 255, 0.08);
+    border-radius: 20px;
+    border: 1px solid rgba(0, 229, 255, 0.2);
+    margin-bottom: 10px;
+}
+.dot-pulse {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: #00E5FF;
+    animation: pulse 1.2s infinite;
+}
+@keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.3; transform: scale(0.7); }
+}
+
+/* ===== System Prompt Box ===== */
+.stTextArea textarea {
+    background: #0D1117 !important;
+    border: 1px solid #1E3A5F !important;
+    border-radius: 10px !important;
+    color: #E2E8F0 !important;
+    font-family: 'Tajawal', sans-serif !important;
+    font-size: 0.88rem !important;
+}
+.stTextArea textarea:focus {
+    border-color: #00E5FF !important;
+    box-shadow: 0 0 15px rgba(0, 229, 255, 0.1) !important;
+}
+
+/* ===== Selectbox & Slider ===== */
+[data-testid="stSelectbox"] > div > div {
+    background: #0D1117 !important;
+    border: 1px solid #1E3A5F !important;
+    border-radius: 10px !important;
+    color: #E2E8F0 !important;
+}
+.stSlider [data-baseweb="slider"] {
+    padding: 5px 0;
+}
+
+/* ===== تنبيهات ===== */
+.stAlert {
+    border-radius: 12px !important;
+    font-family: 'Tajawal', sans-serif !important;
+}
+
+/* ===== شاشة تسجيل الدخول ===== */
+.login-container {
+    max-width: 420px;
+    margin: 80px auto;
+    background: linear-gradient(135deg, #0D1117, #161B27);
+    border: 1px solid #1E3A5F;
+    border-radius: 24px;
+    padding: 40px;
+    text-align: center;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+.login-icon {
+    font-size: 3.5rem;
+    margin-bottom: 15px;
+}
+.login-title {
+    color: #00E5FF;
+    font-size: 1.6rem;
+    font-weight: 900;
+    font-family: 'Tajawal', sans-serif;
+    margin-bottom: 8px;
+}
+.login-subtitle {
+    color: #4A5568;
+    font-size: 0.9rem;
+    font-family: 'Tajawal', sans-serif;
+    margin-bottom: 25px;
+}
+
+/* ===== شريط الأدوات ===== */
+.toolbar {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    padding: 10px 0;
+    margin-bottom: 15px;
+    border-bottom: 1px solid #1E2D40;
+}
+
+/* ===== بطاقة الملف المرفق ===== */
+.file-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(0, 229, 255, 0.1);
+    border: 1px solid rgba(0, 229, 255, 0.3);
+    border-radius: 8px;
+    padding: 4px 10px;
+    font-size: 0.82rem;
+    color: #00E5FF;
+    font-family: 'Tajawal', sans-serif;
+    margin-bottom: 8px;
+}
+
+/* ===== Divider ===== */
+hr {
+    border: none !important;
+    border-top: 1px solid #1E2D40 !important;
+    margin: 15px 0 !important;
+}
+</style>
 """, unsafe_allow_html=True)
 
-# 2. إعداد مفتاح الأمان الثابت الخاص بـ Google Authenticator
-# ملاحظة: هذا المفتاح السري مشفر ومولد خصيصاً لمنظمتك لإصدار رموز الـ 2FA
-if "totp_secret" not in str_ui.session_state:
-    str_ui.session_state.totp_secret = "JBSWY3DPEHPK3PXP" # مفتاح أمان أساسي خاص بك
 
-totp = pyotp.TOTP(str_ui.session_state.totp_secret)
-
-# نظام جدار الحماية الذكي والمصادقة المزدوجة
+# ============================================================
+# 3. شاشة تسجيل الدخول المحسّنة
+# ============================================================
 if "authenticated" not in str_ui.session_state:
     str_ui.session_state.authenticated = False
 
 if not str_ui.session_state.authenticated:
-    str_ui.warning("🔐 منطقة محظورة: يرجى إثبات هويتك الإدارية عبر مصادقة Google للوج إلى مختبر الأفكار الذكية.")
-    
-    col1, col2 = str_ui.columns(2)
-    with col1:
-        # توليد رابط الـ QR لإضافته إلى تطبيق Google Authenticator
-        auth_url = totp.provisioning_uri(name="Touina Daoud", issuer_name="DONIA LABS TECH")
-        
-        # إنشاء صورة الـ QR برمجياً وعرضها في الواجهة
-        qr = qrcode.QRCode(version=1, box_size=10, border=4)
-        qr.add_data(auth_url)
-        qr.make(fit=True)
-        img_qr = qr.make_image(fill_color="black", back_color="white")
-        
-        # تحويل الصورة إلى بايتات ليفهمها Streamlit
-        buf = io.BytesIO()
-        img_qr.save(buf, format="PNG")
-        byte_im = buf.getvalue()
-        
-        str_ui.image(byte_im, caption="امسح الـ QR عبر تطبيق Google Authenticator", width=220)
-        
-    with col2:
-        str_ui.markdown("### 🛡️ خطوتان للأمان المطلق:")
-        str_ui.info("1. افتح تطبيق Google Authenticator في هاتفك وامسح رمز الـ QR المقابل.")
-        str_ui.info("2. أدخل الرمز المكون من 6 أرقام والذي يظهر في هاتفك بالأسفل لتأكيد الدخول.")
-        
-        user_code = str_ui.text_input("أدخل رمز التحقق الديناميكي الحالي (6 أرقام):", max_chars=6, type="password")
-        
-        if str_ui.button("تأكيد الهوية والمصادقة 🔓", use_container_width=True):
-            # التحقق الفوري والدقيق من الرمز المتغير
-            if totp.verify(user_code):
-                str_ui.session_state.authenticated = True
-                str_ui.success("🎯 تم التحقق من سحابة Google بنجاح! مرحباً بك أستاذ داود.")
-                str_ui.rerun()
-            else:
-                str_ui.error("❌ الرمز غير صحيح أو انتهت صلاحيته الزمنية (30 ثانية)! تم تأمين خوادم دونيا لابس تيك.")
-                
-    str_ui.stop() # حجب بقية عناصر التطبيق تماماً حتى يتم التحقق
+    # تصميم شاشة الدخول المركزية
+    col_l, col_c, col_r = str_ui.columns([1, 1.5, 1])
+    with col_c:
+        str_ui.markdown("""
+        <div class='login-container'>
+            <div class='login-icon'>🔐</div>
+            <div class='login-title'>DONIA LABS TECH</div>
+            <div class='login-subtitle'>مختبر الأفكار الذكية — منطقة محمية</div>
+        </div>
+        """, unsafe_allow_html=True)
 
-# =========================================================================
-# الكود التالي لا يظهر إلا بعد إدخال رمز Google Authenticator الصحيح بنجاح
-# =========================================================================
+        str_ui.markdown("##### أدخل كلمة المرور الإدارية:")
+        input_password = str_ui.text_input(
+            "كلمة المرور",
+            type="password",
+            placeholder="••••••••••••",
+            label_visibility="collapsed"
+        )
 
-# 3. إدارة مفاتيح الـ API التلقائية (سحابياً) أو طلبها محلياً بأمان
-api_key = None
-if "ANT_API_KEY" in str_ui.secrets:
-    api_key = str_ui.secrets["ANT_API_KEY"]
-else:
-    with str_ui.sidebar:
-        str_ui.markdown("### 🔑 مصادقة خادم الذكاء")
-        api_key = str_ui.text_input("أدخل مفتاح Anthropic API الجديد:", type="password")
-        if api_key:
-            str_ui.success("✅ تم ربط المفتاح الجديد محلياً")
-
-# 4. عرض الشعار الرسمي للمنصة في المنتصف العلوي بدقة عالية
-logo_path = "LOGO_DONIA_LABS_TECH.png"
-if os.path.exists(logo_path):
-    col1, col2, col3 = str_ui.columns([1, 2, 1])
-    with col2:
-        str_ui.image(logo_path, use_container_width=True)
-
-# العناوين المطورة للعلامة التجارية
-str_ui.markdown("<h1 class='main-title'>🤖 منصة التطوير الذكية</h1>", unsafe_allow_html=True)
-str_ui.markdown("<p class='sub-title'>البيئة الاحترافية لإدارة وتطوير المشاريع التعليمية والتجارية</p>", unsafe_allow_html=True)
-
-# 5. توثيق اسم رائد الأعمال وحفظ حقوق الملكية الفكرية لبراندك
-str_ui.markdown("""
-    <div class='credits-box'>
-        <p class='credits-text'>👤 رائد الأعمال: TOUINA DAOUD</p>
-        <p class='rights-text'>© 2026 DONIA LABS TECH. جميع الحقوق محفوظة لـ مختبر الأفكار الذكية</p>
-    </div>
-""", unsafe_allow_html=True)
-
-# 6. تفعيل الذاكرة وحفظ سياق وتاريخ المحادثة في الـ Session State
-if "chat_history" not in str_ui.session_state:
-    str_ui.session_state.chat_history = []
-
-# عرض الرسائل السابقة المتبادلة في الواجهة بتنسيق ذكي
-for message in str_ui.session_state.chat_history:
-    with str_ui.chat_message(message["role"]):
-        str_ui.markdown(message["content"])
-
-# 7. استقبال المدخلات والأسئلة من خلال شريط الإدخال السفلي
-if user_prompt := str_ui.chat_input("كيف يمكنني مساعدتك في تطوير مشروعك التجاري اليوم؟"):
-    
-    if not api_key:
-        str_ui.error("⚠️ خطأ في الاتصال: يرجى تزويد المنصة بمفتاح الـ API الجديد عبر الشريط الجانبي أولاً.")
-    else:
-        with str_ui.chat_message("user"):
-            str_ui.markdown(user_prompt)
-        
-        str_ui.session_state.chat_history.append({"role": "user", "content": user_prompt})
-
-        try:
-            client = Anthropic(api_key=api_key)
-            
-            with str_ui.chat_message("assistant"):
-                message_placeholder = str_ui.empty()
-                message_placeholder.markdown("⏳ جاري التحليل والتفكير عبر Claude 3.5 Sonnet...")
-                
-                response = client.messages.create(
-                    model="claude-3-5-sonnet-20240620",
-                    max_tokens=4000,
-                    temperature=0.3,
-                    messages=[{"role": m["role"], "content": m["content"]} for m in str_ui.session_state.chat_history]
-                )
-                
-                assistant_response = response.content[0].text
-                message_placeholder.markdown(assistant_response)
-                str_ui.session_state.chat_history.append({"role": "assistant", "content": assistant_response})
-                
-        except Exception as error:
-            str_ui.error(f"حدث خطأ أثناء الاتصال بالـ API: {str(error)}")
+        col_btn1, col_btn2 = str_ui.columns([3, 1])
+        with col_btn1:
+            login_btn = str_ui.button("🔓 دخول إلى المنصة", use_container_width=True)
+        with col_btn2:
+            if str_ui.button("
